@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai3-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ai3
+      POSTGRES_PASSWORD: ai3_dev_password
+      POSTGRES_DB: ai3_db
+    ports:
+      # Host port 5433 (not the default 5432) to avoid conflict with any
+      # native PostgreSQL service installed on the host. The container
+      # still listens on 5432 internally.
+      - "5433:5432"
+    volumes:
+      - ai3_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai3 -d ai3_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ai3_pgdata:
