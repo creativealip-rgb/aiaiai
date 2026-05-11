@@ -30,6 +30,7 @@ export default async function NewProductPage() {
         </div>
         <Button
           variant="outline"
+          nativeButton={false}
           render={<Link href="/admin/products">← Kembali</Link>}
         />
       </div>

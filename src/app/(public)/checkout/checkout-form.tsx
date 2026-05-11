@@ -135,7 +135,7 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
     return (
       <div className="space-y-4 py-10 text-center">
         <p className="text-muted-foreground">Keranjang kosong. Tambahkan produk dulu.</p>
-        <Button render={<Link href="/products">Jelajahi produk</Link>} />
+        <Button nativeButton={false} render={<Link href="/products">Jelajahi produk</Link>} />
       </div>
     );
   }

@@ -37,10 +37,12 @@ export default async function EditProductPage({
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            nativeButton={false}
             render={<Link href={`/products/${product.slug}`} target="_blank">Lihat publik ↗</Link>}
           />
           <Button
             variant="outline"
+            nativeButton={false}
             render={<Link href="/admin/products">← Daftar produk</Link>}
           />
         </div>

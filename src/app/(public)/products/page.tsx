@@ -99,6 +99,7 @@ function Pager({ page, totalPages }: { page: number; totalPages: number }) {
       <Button
         variant="outline"
         size="sm"
+        nativeButton={false}
         disabled={page <= 1}
         render={
           <Link
@@ -117,6 +118,7 @@ function Pager({ page, totalPages }: { page: number; totalPages: number }) {
       <Button
         variant="outline"
         size="sm"
+        nativeButton={false}
         disabled={page >= totalPages}
         render={
           <Link

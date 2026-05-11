@@ -203,6 +203,7 @@ function Pagination({
       <Button
         variant="outline"
         size="sm"
+        nativeButton={false}
         disabled={page <= 1}
         render={<Link href={page > 1 ? link(page - 1) : "#"}>Sebelumnya</Link>}
       />
@@ -212,6 +213,7 @@ function Pagination({
       <Button
         variant="outline"
         size="sm"
+        nativeButton={false}
         disabled={page >= totalPages}
         render={<Link href={page < totalPages ? link(page + 1) : "#"}>Berikutnya</Link>}
       />

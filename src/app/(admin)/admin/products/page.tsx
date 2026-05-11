@@ -66,7 +66,7 @@ export default async function AdminProductsPage({
             menghilangkan riwayat order.
           </p>
         </div>
-        <Button render={<Link href="/admin/products/new">+ Produk baru</Link>} />
+        <Button nativeButton={false} render={<Link href="/admin/products/new">+ Produk baru</Link>} />
       </div>
 
       <Card>
@@ -201,6 +201,7 @@ function Pagination({
       <Button
         variant="outline"
         size="sm"
+        nativeButton={false}
         disabled={page <= 1}
         render={<Link href={page > 1 ? link(page - 1) : "#"}>Sebelumnya</Link>}
       />
@@ -210,6 +211,7 @@ function Pagination({
       <Button
         variant="outline"
         size="sm"
+        nativeButton={false}
         disabled={page >= totalPages}
         render={<Link href={page < totalPages ? link(page + 1) : "#"}>Berikutnya</Link>}
       />

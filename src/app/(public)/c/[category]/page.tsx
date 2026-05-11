@@ -131,6 +131,7 @@ export default async function CategoryPage({
                 <Button
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   disabled={page <= 1}
                   render={
                     <Link
@@ -150,6 +151,7 @@ export default async function CategoryPage({
                 <Button
                   variant="outline"
                   size="sm"
+                  nativeButton={false}
                   disabled={page >= totalPages}
                   render={
                     <Link

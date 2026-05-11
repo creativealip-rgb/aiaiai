@@ -33,10 +33,15 @@ export default function HomePage() {
           / VA / e-wallet, bantuan 24/7.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button size="lg" render={<Link href="/products">Jelajahi produk</Link>} />
+          <Button
+            size="lg"
+            nativeButton={false}
+            render={<Link href="/products">Jelajahi produk</Link>}
+          />
           <Button
             variant="outline"
             size="lg"
+            nativeButton={false}
             render={<Link href="/register">Daftar gratis</Link>}
           />
         </div>
