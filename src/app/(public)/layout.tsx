@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { MessageCircle } from "lucide-react";
 
 import { env } from "@/lib/env";
 import { listActiveCategories } from "@/server/queries/categories";
 import { getSession } from "@/server/auth";
+import { buildWhatsappUrl, getWhatsappFloatSetting } from "@/server/services/site-settings";
 
 /**
  * Shared layout for all public-facing pages (landing, catalog, detail).
@@ -14,8 +16,13 @@ import { getSession } from "@/server/auth";
  * per request + cached (memoised) within the render pass.
  */
 export default async function PublicLayout({ children }: { children: ReactNode }) {
-  const [categories, session] = await Promise.all([listActiveCategories(), getSession()]);
+  const [categories, session, whatsapp] = await Promise.all([
+    listActiveCategories(),
+    getSession(),
+    getWhatsappFloatSetting(),
+  ]);
   const user = session?.user;
+  const whatsappUrl = whatsapp ? buildWhatsappUrl(whatsapp.phone, whatsapp.message) : null;
 
   return (
     <div className="bg-background flex min-h-screen flex-col">
@@ -79,6 +86,19 @@ export default async function PublicLayout({ children }: { children: ReactNode }
       </header>
 
       <main className="flex-1">{children}</main>
+
+      {whatsappUrl ? (
+        <Link
+          href={whatsappUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="fixed right-4 bottom-4 z-40 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:brightness-95"
+          aria-label="Chat via WhatsApp"
+        >
+          <MessageCircle className="h-4 w-4" />
+          WhatsApp
+        </Link>
+      ) : null}
 
       <footer className="border-t py-6">
         <div className="text-muted-foreground mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 text-xs">

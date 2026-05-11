@@ -29,6 +29,7 @@ const checkoutFormSchema = z.object({
   guestName: z.string().trim().min(2, "Nama minimal 2 karakter.").max(80),
   guestPhone: z.string().trim().min(8, "Nomor HP minimal 8 digit.").max(20),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
+  voucherCode: z.string().trim().max(32).optional().or(z.literal("")),
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutFormSchema>;
@@ -56,6 +57,7 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
       guestName: user?.name ?? "",
       guestPhone: user?.phone ?? "",
       notes: "",
+      voucherCode: "",
     },
   });
 
@@ -65,17 +67,17 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
       guestName: user?.name ?? "",
       guestPhone: user?.phone ?? "",
       notes: "",
+      voucherCode: "",
     });
   }, [form, user]);
 
   const total = getTotal();
   const canUseWallet = !!user && user.balance > 0;
-  const walletEnough = !!user && user.balance >= total;
 
   const walletUsedPreview = useMemo(() => {
-    if (!isLoggedIn || paymentChoice !== "wallet" || !walletEnough) return 0;
-    return total;
-  }, [isLoggedIn, paymentChoice, total, walletEnough]);
+    if (!isLoggedIn || paymentChoice !== "wallet") return 0;
+    return Math.min(total, user?.balance ?? 0);
+  }, [isLoggedIn, paymentChoice, total, user?.balance]);
 
   const payableNow = Math.max(0, total - walletUsedPreview);
 
@@ -87,11 +89,6 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
 
     if (!isLoggedIn && paymentChoice !== "mayar") {
       toast.error("Guest checkout hanya mendukung pembayaran via Mayar.");
-      return;
-    }
-
-    if (isLoggedIn && paymentChoice === "wallet" && !walletEnough) {
-      toast.error("Saldo tidak cukup untuk pembayaran penuh.");
       return;
     }
 
@@ -107,6 +104,7 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
       guestName: values.guestName,
       guestPhone: values.guestPhone,
       notes: values.notes ?? "",
+      voucherCode: values.voucherCode ?? "",
       useBalance: isLoggedIn && paymentChoice === "wallet",
       paymentMethod: paymentChoice,
     } as const;
@@ -211,6 +209,20 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="voucherCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kode voucher (opsional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value ?? ""} placeholder="HEMAT10" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
 
@@ -225,7 +237,7 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
                     type="radio"
                     name="payment-method"
                     value="mayar"
-                    checked={paymentChoice === "mayar" || !walletEnough}
+                    checked={paymentChoice === "mayar"}
                     onChange={() => setPaymentChoice("mayar")}
                   />
                   <span>Mayar (QRIS / VA / e-wallet)</span>
@@ -234,19 +246,19 @@ export function CheckoutForm({ user }: { user: CheckoutUser }) {
                 {canUseWallet ? (
                   <label
                     className="border-border flex items-center gap-3 rounded-md border p-3"
-                    aria-disabled={!walletEnough}
                   >
                     <input
                       type="radio"
                       name="payment-method"
                       value="wallet"
-                      checked={paymentChoice === "wallet" && walletEnough}
+                      checked={paymentChoice === "wallet"}
                       onChange={() => setPaymentChoice("wallet")}
-                      disabled={!walletEnough}
                     />
                     <span>
                       Saldo AI3 ({formatIdr(user?.balance ?? 0)})
-                      {!walletEnough ? " — saldo belum cukup untuk bayar penuh" : ""}
+                      {user && user.balance < total
+                        ? " — akan dipakai parsial, sisanya via Mayar"
+                        : ""}
                     </span>
                   </label>
                 ) : null}

@@ -17,6 +17,7 @@ export const checkoutSchema = z.object({
   guestName: z.string().trim().min(2).max(80).optional().or(z.literal("")),
   guestPhone: z.string().trim().min(8).max(20).optional().or(z.literal("")),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
+  voucherCode: z.string().trim().max(32).optional().or(z.literal("")),
   useBalance: z.boolean().default(false),
   paymentMethod: z.enum(["mayar", "wallet"]).default("mayar"),
 });

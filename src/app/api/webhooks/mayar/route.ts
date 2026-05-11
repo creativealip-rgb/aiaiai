@@ -7,6 +7,7 @@ import {
   type MayarWebhookPayload,
 } from "@/lib/payment/mayar";
 import { processPaymentSuccess } from "@/server/services/orders";
+import { processWalletTopupSuccess } from "@/server/services/wallet";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,15 @@ export async function POST(req: Request) {
 
   // Process
   try {
+    const isWalletTopup = await processWalletTopupSuccess(payload.data.id);
+    if (isWalletTopup) {
+      await db
+        .update(paymentWebhookEvents)
+        .set({ processedAt: new Date() })
+        .where(eq(paymentWebhookEvents.eventId, eventId));
+      return NextResponse.json({ received: true, topup: true });
+    }
+
     if (payload.event === "payment.success" || payload.data?.status === "paid") {
       await processPaymentSuccess(
         payload.data.id,

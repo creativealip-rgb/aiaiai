@@ -394,6 +394,20 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   "refunded",
 ]);
 
+export const voucherTypeEnum = pgEnum("voucher_type", ["percent", "fixed"]);
+export const walletTopupStatusEnum = pgEnum("wallet_topup_status", [
+  "pending",
+  "paid",
+  "failed",
+  "expired",
+]);
+export const walletTransactionTypeEnum = pgEnum("wallet_transaction_type", [
+  "topup",
+  "purchase",
+  "refund",
+  "adjustment",
+]);
+
 // -- Orders -----------------------------------------------------------------
 
 export const orders = pgTable(
@@ -585,6 +599,158 @@ export const paymentWebhookEvents = pgTable(
   (table) => [uniqueIndex("payment_webhook_events_event_id_unique_idx").on(table.eventId)],
 );
 
+// -- Vouchers ---------------------------------------------------------------
+
+export const vouchers = pgTable(
+  "vouchers",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    code: text("code").notNull(),
+    type: voucherTypeEnum("type").notNull(),
+    value: numeric("value", { precision: 14, scale: 2 }).notNull(),
+    minSpend: numeric("min_spend", { precision: 14, scale: 2 }).notNull().default("0"),
+    maxUses: integer("max_uses"),
+    usedCount: integer("used_count").notNull().default(0),
+    maxUsesPerUser: integer("max_uses_per_user").notNull().default(1),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("vouchers_code_unique_idx").on(table.code)],
+);
+
+export const voucherRedemptions = pgTable(
+  "voucher_redemptions",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    voucherId: text("voucher_id")
+      .notNull()
+      .references(() => vouchers.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => orders.id),
+    amountDiscounted: numeric("amount_discounted", { precision: 14, scale: 2 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("voucher_redemptions_voucher_order_unique_idx").on(table.voucherId, table.orderId),
+    index("voucher_redemptions_voucher_user_idx").on(table.voucherId, table.userId),
+  ],
+);
+
+// -- Wallet ----------------------------------------------------------------
+
+export const walletTopups = pgTable(
+  "wallet_topups",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    status: walletTopupStatusEnum("status").notNull().default("pending"),
+    mayarInvoiceId: text("mayar_invoice_id"),
+    paymentUrl: text("payment_url"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("wallet_topups_mayar_invoice_id_unique_idx").on(table.mayarInvoiceId),
+    index("wallet_topups_user_id_status_idx").on(table.userId, table.status),
+  ],
+);
+
+export const walletTransactions = pgTable(
+  "wallet_transactions",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    type: walletTransactionTypeEnum("type").notNull(),
+    amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+    balanceAfter: numeric("balance_after", { precision: 14, scale: 2 }).notNull(),
+    refType: text("ref_type"),
+    refId: text("ref_id"),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("wallet_transactions_user_created_idx").on(table.userId, table.createdAt)],
+);
+
+// -- Reviews ---------------------------------------------------------------
+
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id),
+    orderItemId: text("order_item_id")
+      .notNull()
+      .references(() => orderItems.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    comment: text("comment"),
+    isHidden: boolean("is_hidden").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("reviews_order_item_id_unique_idx").on(table.orderItemId),
+    index("reviews_product_id_idx").on(table.productId),
+  ],
+);
+
+// -- Notifications ----------------------------------------------------------
+
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    linkUrl: text("link_url"),
+    isRead: boolean("is_read").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("notifications_user_read_created_idx").on(table.userId, table.isRead, table.createdAt)],
+);
+
+// -- Site settings ----------------------------------------------------------
+
+export const siteSettings = pgTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull().$type<Record<string, unknown>>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // -- Type exports -----------------------------------------------------------
 
 export type User = typeof users.$inferSelect;
@@ -614,5 +780,15 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type CredentialAccessLog = typeof credentialAccessLogs.$inferSelect;
 export type AdminActionLog = typeof adminActionLogs.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type Voucher = typeof vouchers.$inferSelect;
+export type VoucherType = (typeof voucherTypeEnum.enumValues)[number];
+export type VoucherRedemption = typeof voucherRedemptions.$inferSelect;
+export type WalletTopup = typeof walletTopups.$inferSelect;
+export type WalletTopupStatus = (typeof walletTopupStatusEnum.enumValues)[number];
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+export type WalletTransactionType = (typeof walletTransactionTypeEnum.enumValues)[number];
+export type Review = typeof reviews.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
+export type SiteSetting = typeof siteSettings.$inferSelect;
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number];

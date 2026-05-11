@@ -1,9 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 import { env } from "@/lib/env";
 import { requireUser } from "@/server/auth";
+import { listNotificationsByUser } from "@/server/services/notifications";
 
 import { SignOutButton } from "./sign-out-button";
 
@@ -12,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();
+  const notifications = await listNotificationsByUser(user.id, 20);
 
   return (
     <div className="bg-background min-h-screen">
@@ -28,6 +31,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
               <Link className="hover:text-foreground text-muted-foreground" href="/dashboard/orders">
                 Orders
               </Link>
+              <Link className="hover:text-foreground text-muted-foreground" href="/dashboard/wallet">
+                Wallet
+              </Link>
+              <Link className="hover:text-foreground text-muted-foreground" href="/dashboard/reviews">
+                Reviews
+              </Link>
               <Link
                 className="hover:text-foreground text-muted-foreground"
                 href="/dashboard/profile"
@@ -42,6 +51,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell items={notifications} />
             <div className="text-right text-xs">
               <div className="font-medium">{user.name || user.email}</div>
               <div className="text-muted-foreground capitalize">{user.role}</div>

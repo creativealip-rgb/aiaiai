@@ -563,11 +563,11 @@ Setiap task ada **Acceptance Criteria (AC)** yang harus terpenuhi sebelum diangg
 
 ### Fase 6 — Fitur Tambahan (3-5 hari)
 
-- [ ] **Voucher**: admin CRUD, checkout apply, validasi expiry/limit/user-limit, redemption tercatat.
-- [ ] **Wallet**: top-up via Mayar, riwayat transaksi, pakai saldo di checkout (parsial & full).
-- [ ] **Review**: member bisa review hanya produk yang di-delivered, 1 review / order-item, admin bisa hide.
-- [ ] **Notifikasi in-app**: bell icon di topbar, mark as read.
-- [ ] **WhatsApp float**: konfigurasi nomor di `site_settings`.
+- [x] **Voucher**: admin CRUD, checkout apply, validasi expiry/limit/user-limit, redemption tercatat.
+- [x] **Wallet**: top-up via Mayar, riwayat transaksi, pakai saldo di checkout (parsial & full).
+- [x] **Review**: member bisa review hanya produk yang di-delivered, 1 review / order-item, admin bisa hide.
+- [x] **Notifikasi in-app**: bell icon di topbar, mark as read.
+- [x] **WhatsApp float**: konfigurasi nomor di `site_settings`.
 
 **AC**: semua fitur tambahan aktif & teruji happy path.
 

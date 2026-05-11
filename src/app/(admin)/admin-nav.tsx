@@ -17,6 +17,9 @@ const SECTIONS = [
   { href: "/admin/orders", label: "Orders", match: (p: string) => p.startsWith("/admin/orders") },
   { href: "/admin/users", label: "Users", match: (p: string) => p.startsWith("/admin/users") },
   { href: "/admin/payments", label: "Payments", match: (p: string) => p.startsWith("/admin/payments") },
+  { href: "/admin/vouchers", label: "Vouchers", match: (p: string) => p.startsWith("/admin/vouchers") },
+  { href: "/admin/reviews", label: "Reviews", match: (p: string) => p.startsWith("/admin/reviews") },
+  { href: "/admin/settings", label: "Settings", match: (p: string) => p.startsWith("/admin/settings") },
   { href: "/admin/products", label: "Produk", match: (p: string) => p.startsWith("/admin/products") },
   {
     href: "/admin/categories",

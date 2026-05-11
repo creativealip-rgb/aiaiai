@@ -12,6 +12,7 @@ import {
   getActiveProductBySlug,
   listRelatedProducts,
 } from "@/server/queries/products";
+import { listVisibleReviewsByProduct } from "@/server/queries/reviews";
 
 // Product details can be ISR'd — admin edits trigger `revalidatePath` on the
 // exact slug (see actions). `revalidate = 300` keeps it reasonable for traffic
@@ -65,7 +66,10 @@ export default async function ProductDetailPage({
   const product = await getActiveProductBySlug(slug);
   if (!product) notFound();
 
-  const related = await listRelatedProducts(product.id, product.categoryId, 4);
+  const [related, reviews] = await Promise.all([
+    listRelatedProducts(product.id, product.categoryId, 4),
+    listVisibleReviewsByProduct(product.id, 10),
+  ]);
 
   const price = effectivePrice(product.basePrice, product.discountPrice);
   const discount = discountPercent(product.basePrice, product.discountPrice);
@@ -179,6 +183,28 @@ export default async function ProductDetailPage({
           <MarkdownDescription content={product.description} />
         </section>
       ) : null}
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Ulasan pelanggan</h2>
+        {reviews.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Belum ada ulasan.</p>
+        ) : (
+          <div className="space-y-3">
+            {reviews.map((review) => (
+              <article key={review.id} className="space-y-2 rounded-md border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium">{review.userName || "Member"}</p>
+                  <p className="text-xs">{review.rating}/5</p>
+                </div>
+                {review.comment ? <p className="text-sm">{review.comment}</p> : null}
+                <p className="text-muted-foreground text-xs">
+                  {new Date(review.createdAt).toLocaleString("id-ID")}
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       {related.length > 0 ? (
         <section className="space-y-4">

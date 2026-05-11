@@ -22,6 +22,9 @@ import {
   productVariants,
   products,
   users,
+  voucherRedemptions,
+  vouchers,
+  walletTransactions,
   type Order,
 } from "@/db/schema";
 import { decryptCredential } from "@/lib/crypto";
@@ -31,6 +34,8 @@ import { sendGuestOrderAccessEmail } from "@/lib/email/order-access";
 import { createMayarInvoice } from "@/lib/payment/mayar";
 import type { CheckoutInput } from "@/lib/schemas/checkout";
 import { findOrCreateShadowUser, ShadowUserAlreadyClaimedError } from "@/server/auth";
+import { createNotification } from "@/server/services/notifications";
+import { normalizeVoucherCode } from "@/server/services/vouchers";
 
 // ---------------------------------------------------------------------------
 // Order number generation: AI3-YYYY-NNNN (sequential per year)
@@ -163,7 +168,6 @@ export async function createOrder(
   }
 
   const subtotal = lineItems.reduce((sum, li) => sum + li.lineTotal, 0);
-  const total = subtotal; // Voucher discount deferred to Fase 6
 
   // 3. Create order + items in a transaction
   const orderNumber = await nextOrderNumber();
@@ -171,16 +175,98 @@ export async function createOrder(
 
   const wantsWallet =
     !!userId && (input.useBalance || input.paymentMethod === "wallet");
-  const now = new Date();
 
-  const { order, paidWithWallet } = await db.transaction(async (tx) => {
+  const { order, payableAmount } = await db.transaction(async (tx) => {
+    const now = new Date();
+    const voucherCode = input.voucherCode?.trim();
+    let appliedVoucherId: string | null = null;
+    let discount = 0;
+
+    if (voucherCode) {
+      const normalizedCode = normalizeVoucherCode(voucherCode);
+      const [voucher] = await tx
+        .select()
+        .from(vouchers)
+        .where(eq(vouchers.code, normalizedCode))
+        .limit(1);
+
+      if (!voucher || !voucher.isActive) {
+        throw new CheckoutError("Kode voucher tidak valid.", "VOUCHER_INVALID");
+      }
+
+      if (voucher.startsAt && voucher.startsAt > now) {
+        throw new CheckoutError("Voucher belum aktif.", "VOUCHER_NOT_STARTED");
+      }
+      if (voucher.expiresAt && voucher.expiresAt < now) {
+        throw new CheckoutError("Voucher sudah kedaluwarsa.", "VOUCHER_EXPIRED");
+      }
+
+      const minSpend = Number(voucher.minSpend ?? "0");
+      if (subtotal < minSpend) {
+        throw new CheckoutError(
+          `Minimum belanja untuk voucher ini ${minSpend.toLocaleString("id-ID")}.`,
+          "VOUCHER_MIN_SPEND",
+        );
+      }
+
+      const [userUsage] = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(voucherRedemptions)
+        .where(and(eq(voucherRedemptions.voucherId, voucher.id), eq(voucherRedemptions.userId, resolvedUserId)));
+
+      const usedByUser = Number(userUsage?.count ?? 0);
+      if (usedByUser >= voucher.maxUsesPerUser) {
+        throw new CheckoutError("Batas penggunaan voucher untuk akun ini sudah habis.", "VOUCHER_USER_LIMIT");
+      }
+
+      const rawValue = Number(voucher.value);
+      discount =
+        voucher.type === "percent"
+          ? Math.floor((subtotal * rawValue) / 100)
+          : Math.floor(rawValue);
+
+      if (discount <= 0) {
+        throw new CheckoutError("Voucher tidak menghasilkan potongan.", "VOUCHER_INVALID");
+      }
+      if (discount > subtotal) discount = subtotal;
+
+      const updatedVoucher = await tx
+        .update(vouchers)
+        .set({
+          usedCount: sql`${vouchers.usedCount} + 1`,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(vouchers.id, voucher.id),
+            sql`${vouchers.maxUses} is null or ${vouchers.usedCount} < ${vouchers.maxUses}`,
+          ),
+        )
+        .returning({ id: vouchers.id });
+
+      if (updatedVoucher.length === 0) {
+        throw new CheckoutError("Voucher sudah mencapai batas penggunaan.", "VOUCHER_EXHAUSTED");
+      }
+
+      appliedVoucherId = voucher.id;
+    }
+
+    const total = Math.max(0, subtotal - discount);
     let walletUsed = 0;
-    let resolvedPaymentMethod: "mayar" | "wallet" = "mayar";
+    let resolvedPaymentMethod: "mayar" | "wallet" | "mixed" | "voucher" = "mayar";
     let initialOrderStatus: "pending" | "paid" = "pending";
     let paidAt: Date | null = null;
     let orderExpiresAt: Date | null = expiresAt;
+    let balanceAfterWallet: number | null = null;
 
-    if (wantsWallet) {
+    if (total === 0) {
+      resolvedPaymentMethod = "voucher";
+      initialOrderStatus = "paid";
+      paidAt = now;
+      orderExpiresAt = null;
+    }
+
+    if (wantsWallet && total > 0) {
       const [userBalance] = await tx
         .select({ balance: users.balance })
         .from(users)
@@ -188,18 +274,20 @@ export async function createOrder(
         .limit(1);
 
       const balance = Number(userBalance?.balance ?? "0");
-      if (!Number.isFinite(balance) || balance < total) {
+      if (!Number.isFinite(balance) || balance <= 0) {
         throw new CheckoutError(
-          "Saldo tidak cukup untuk pembayaran penuh. Pilih Mayar atau top up saldo.",
+          "Saldo tidak tersedia untuk digunakan.",
           "INSUFFICIENT_WALLET_BALANCE",
         );
       }
 
-      walletUsed = total;
-      resolvedPaymentMethod = "wallet";
-      initialOrderStatus = "paid";
-      paidAt = now;
-      orderExpiresAt = null;
+      walletUsed = Math.min(balance, total);
+      resolvedPaymentMethod = walletUsed >= total ? "wallet" : "mixed";
+      if (walletUsed >= total) {
+        initialOrderStatus = "paid";
+        paidAt = now;
+        orderExpiresAt = null;
+      }
 
       const debited = await tx
         .update(users)
@@ -208,7 +296,7 @@ export async function createOrder(
           updatedAt: now,
         })
         .where(and(eq(users.id, resolvedUserId), sql`${users.balance} >= ${walletUsed.toString()}`))
-        .returning({ id: users.id });
+        .returning({ id: users.id, balance: users.balance });
 
       if (debited.length === 0) {
         throw new CheckoutError(
@@ -216,6 +304,7 @@ export async function createOrder(
           "BALANCE_CHANGED",
         );
       }
+      balanceAfterWallet = Number(debited[0]?.balance ?? 0);
     }
 
     const [ord] = await tx
@@ -226,8 +315,9 @@ export async function createOrder(
         isGuestOrder,
         status: initialOrderStatus,
         subtotal: subtotal.toString(),
-        discount: "0",
+        discount: discount.toString(),
         total: total.toString(),
+        voucherId: appliedVoucherId,
         paymentMethod: resolvedPaymentMethod,
         walletUsed: walletUsed.toString(),
         notes: input.notes || null,
@@ -249,6 +339,15 @@ export async function createOrder(
       })),
     );
 
+    if (appliedVoucherId && discount > 0) {
+      await tx.insert(voucherRedemptions).values({
+        voucherId: appliedVoucherId,
+        userId: resolvedUserId,
+        orderId: ord.id,
+        amountDiscounted: discount.toString(),
+      });
+    }
+
     if (walletUsed > 0) {
       await tx.insert(payments).values({
         orderId: ord.id,
@@ -262,19 +361,32 @@ export async function createOrder(
         rawRequest: { orderNumber: ord.orderNumber, amount: walletUsed },
         rawResponse: { source: "wallet_balance" },
       });
+
+      await tx.insert(walletTransactions).values({
+        userId: resolvedUserId,
+        type: "purchase",
+        amount: (-walletUsed).toString(),
+        balanceAfter: (balanceAfterWallet ?? 0).toString(),
+        refType: "order",
+        refId: ord.id,
+        description: `Pembayaran order ${ord.orderNumber}`,
+      });
     }
 
-    return { order: ord, paidWithWallet: walletUsed > 0 };
+    return {
+      order: ord,
+      payableAmount: Math.max(0, total - walletUsed),
+    };
   });
 
   // 4. Create Mayar invoice
   let paymentUrl: string | null = null;
-  if (!paidWithWallet) {
+  if (payableAmount > 0) {
     try {
       const redirectUrl = `${env.NEXT_PUBLIC_APP_URL}/order/${order.orderNumber}`;
       const result = await createMayarInvoice({
         orderNumber: order.orderNumber,
-        amount: total,
+        amount: payableAmount,
         customerName: input.guestName || "Member",
         customerEmail: input.guestEmail || "noreply@ai3.local",
         description: `Order ${order.orderNumber}`,
@@ -294,9 +406,9 @@ export async function createOrder(
         userId: resolvedUserId,
         gateway: "mayar",
         gatewayRef: result.invoiceId,
-        amount: total.toString(),
+        amount: payableAmount.toString(),
         status: "pending",
-        rawRequest: { orderNumber: order.orderNumber, amount: total },
+        rawRequest: { orderNumber: order.orderNumber, amount: payableAmount },
         rawResponse: result.rawResponse as Record<string, unknown>,
       });
     } catch (error) {
@@ -305,13 +417,25 @@ export async function createOrder(
     }
   }
 
-  // Wallet-only orders are paid immediately and skip webhook. Issue guest
-  // access link right away when this edge-case ever happens in the future.
-  if (isGuestOrder && paidWithWallet) {
+  const paidImmediately = order.status === "paid";
+
+  if (isGuestOrder && paidImmediately) {
     await issueGuestAccessLink(order.id, order.orderNumber, resolvedUserId);
   }
 
-  if (paidWithWallet) {
+  if (paidImmediately) {
+    try {
+      await createNotification({
+        userId: resolvedUserId,
+        type: "order_paid",
+        title: "Pembayaran diterima",
+        message: `Order ${order.orderNumber} sudah dibayar.`,
+        linkUrl: "/dashboard/orders",
+      });
+    } catch (error) {
+      console.error("[createOrder] failed creating payment notification", error);
+    }
+
     try {
       await autoAssignAccountStocksAfterPayment(order.id);
       await sendDeliveryEmailForOrder(order.id);
@@ -385,6 +509,20 @@ export async function processPaymentSuccess(
 
   if (paidOrder?.isGuestOrder) {
     await issueGuestAccessLink(paidOrder.id, paidOrder.orderNumber, paidOrder.userId);
+  }
+
+  if (paidOrder) {
+    try {
+      await createNotification({
+        userId: paidOrder.userId,
+        type: "order_paid",
+        title: "Pembayaran diterima",
+        message: `Order ${paidOrder.orderNumber} sudah dibayar.`,
+        linkUrl: "/dashboard/orders",
+      });
+    } catch (error) {
+      console.error("[processPaymentSuccess] failed creating payment notification", error);
+    }
   }
 
   try {
