@@ -519,45 +519,45 @@ Setiap task ada **Acceptance Criteria (AC)** yang harus terpenuhi sebelum diangg
 
 ### Fase 3 — Cart & Checkout (3-4 hari)
 
-- [ ] Cart store (Zustand + `persist` localStorage).
-- [ ] Halaman `/cart` (update qty, hapus item, tampilkan stok tersisa bila tracked).
-- [ ] Halaman `/checkout`:
+- [x] Cart store (Zustand + `persist` localStorage).
+- [x] Halaman `/cart` (update qty, hapus item, tampilkan stok tersisa bila tracked).
+- [x] Halaman `/checkout`:
   - Guest form (email, name, phone, notes — wajib) — auto-lookup / create shadow user.
   - Jika email sudah claimed → redirect ke login (lihat §7.8).
   - Member (login): form prefilled, email read-only.
   - Toggle pakai saldo (bila login & balance > 0).
   - Apply voucher — skip bila Fase 6 belum jalan.
   - Pilih payment method.
-- [ ] Integrasi Mayar:
+- [x] Integrasi Mayar:
   - `src/lib/payment/mayar.ts` (create invoice, verify webhook).
   - Create order → create Mayar invoice → redirect.
-- [ ] Route `/api/webhooks/mayar` dengan signature verify + idempotency.
-- [ ] **Magic link guest**: generate `order_access_tokens` setelah paid, kirim via email.
-- [ ] Halaman `/order/[orderNumber]?token=<opaque>` — guest bisa polling status; member lihat tanpa token (session check).
-- [ ] Cron/worker expire pending order.
+- [x] Route `/api/webhooks/mayar` dengan signature verify + idempotency.
+- [x] **Magic link guest**: generate `order_access_tokens` setelah paid, kirim via email.
+- [x] Halaman `/order/[orderNumber]?token=<opaque>` — guest bisa polling status; member lihat tanpa token (session check).
+- [x] Cron/worker expire pending order.
 
 **AC**: happy path lengkap (pilih → checkout guest & member → bayar → status paid). Webhook tahan duplikat & replay. Guest bisa lihat order via magic link.
 
 ### Fase 4 — Inventori Akun & Delivery (2-3 hari)
 
-- [ ] `src/lib/crypto.ts` (AES-256-GCM encrypt/decrypt).
-- [ ] Admin: CRUD stok, view status, filter available/sold.
-- [ ] Admin: bulk import CSV (`email,password,profile,notes`).
-- [ ] Auto-assign stock saat webhook paid (race-safe).
-- [ ] Email kredensial via Resend (template react-email).
-- [ ] Halaman `/dashboard/orders/[id]` — tombol "Tampilkan Kredensial" (decrypt on demand, log audit access).
-- [ ] Tombol "Salin" kredensial.
+- [x] `src/lib/crypto.ts` (AES-256-GCM encrypt/decrypt).
+- [x] Admin: CRUD stok, view status, filter available/sold.
+- [x] Admin: bulk import CSV (`email,password,profile,notes`).
+- [x] Auto-assign stock saat webhook paid (race-safe).
+- [x] Email kredensial via Resend (template react-email).
+- [x] Halaman `/dashboard/orders/[id]` — tombol "Tampilkan Kredensial" (decrypt on demand, log audit access).
+- [x] Tombol "Salin" kredensial.
 
 **AC**: beli produk auto → email masuk dengan kredensial → dashboard tampilkan kredensial yang sama. Stock tidak pernah double-assigned (concurrency test).
 
 ### Fase 5 — Admin Panel (3-4 hari)
 
-- [ ] Layout admin (sidebar, topbar, breadcrumb).
-- [ ] `/admin` dashboard: revenue (day/week/month), total order per status, top products, low stock alert — pakai Recharts.
-- [ ] `/admin/orders` — table dengan filter (status, tanggal, search), aksi (deliver manual, cancel, refund).
-- [ ] `/admin/users` — list + detail (ban/unban, reset password, history order).
-- [ ] `/admin/payments` — rekap per gateway, export CSV.
-- [ ] Audit log record untuk setiap aksi admin sensitif.
+- [x] Layout admin (sidebar, topbar, breadcrumb).
+- [x] `/admin` dashboard: revenue (day/week/month), total order per status, top products, low stock alert — pakai Recharts.
+- [x] `/admin/orders` — table dengan filter (status, tanggal, search), aksi (deliver manual, cancel, refund).
+- [x] `/admin/users` — list + detail (ban/unban, reset password, history order).
+- [x] `/admin/payments` — rekap per gateway, export CSV.
+- [x] Audit log record untuk setiap aksi admin sensitif.
 
 **AC**: admin bisa handle full lifecycle order (termasuk manual) tanpa query DB manual.
 

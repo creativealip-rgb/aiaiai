@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import { env } from "@/lib/env";
 import { requireAdmin } from "@/server/auth";
 
-import { AdminNav } from "./admin-nav";
+import { AdminBreadcrumb } from "./admin-breadcrumb";
+import { AdminNav, AdminSidebarNav } from "./admin-nav";
 import { SignOutButton } from "../(member)/dashboard/sign-out-button";
 import { Button } from "@/components/ui/button";
 
@@ -21,31 +22,51 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className="bg-background min-h-screen">
-      <header className="border-b bg-neutral-950 text-neutral-100">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-base font-bold tracking-tight">
+      <div className="mx-auto flex max-w-7xl gap-0 px-0 lg:px-4">
+        <aside className="hidden min-h-screen w-64 border-r bg-neutral-50 px-4 py-6 lg:block">
+          <div className="space-y-1">
+            <Link href="/admin" className="block text-base font-bold tracking-tight text-neutral-900">
               {env.NEXT_PUBLIC_APP_NAME} · Admin
             </Link>
-            <AdminNav />
+            <p className="text-xs text-neutral-500">Panel operasional marketplace</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link className="text-sm text-neutral-300 hover:text-white" href="/dashboard">
-              Dashboard member
-            </Link>
-            <div className="text-right text-xs">
-              <div className="font-medium">{user.name || user.email}</div>
-              <div className="text-neutral-400">admin</div>
+          <div className="mt-6">
+            <AdminSidebarNav />
+          </div>
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <header className="border-b bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
+              <div className="space-y-1">
+                <Link href="/admin" className="text-base font-semibold tracking-tight text-neutral-900 lg:hidden">
+                  {env.NEXT_PUBLIC_APP_NAME} · Admin
+                </Link>
+                <AdminBreadcrumb />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="hidden md:block">
+                  <AdminNav />
+                </div>
+                <Link className="text-sm text-neutral-600 hover:text-neutral-900" href="/dashboard">
+                  Dashboard member
+                </Link>
+                <div className="text-right text-xs">
+                  <div className="font-medium text-neutral-900">{user.name || user.email}</div>
+                  <div className="text-neutral-500">admin</div>
+                </div>
+                <SignOutButton>
+                  <Button size="sm" variant="outline">
+                    Keluar
+                  </Button>
+                </SignOutButton>
+              </div>
             </div>
-            <SignOutButton>
-              <Button size="sm" variant="outline">
-                Keluar
-              </Button>
-            </SignOutButton>
-          </div>
+          </header>
+          <main className="px-4 py-8 lg:px-6">{children}</main>
         </div>
-      </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      </div>
     </div>
   );
 }

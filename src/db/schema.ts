@@ -505,6 +505,32 @@ export const credentialAccessLogs = pgTable(
   ],
 );
 
+// -- Admin action logs ------------------------------------------------------
+
+export const adminActionLogs = pgTable(
+  "admin_action_logs",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => randomUUID()),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => users.id),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id"),
+    diff: jsonb("diff").$type<Record<string, unknown>>(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("admin_action_logs_actor_id_idx").on(table.actorId),
+    index("admin_action_logs_entity_idx").on(table.entityType, table.entityId),
+    index("admin_action_logs_created_at_idx").on(table.createdAt),
+  ],
+);
+
 // -- Payments ---------------------------------------------------------------
 
 export const payments = pgTable(
@@ -586,6 +612,7 @@ export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type CredentialAccessLog = typeof credentialAccessLogs.$inferSelect;
+export type AdminActionLog = typeof adminActionLogs.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number];

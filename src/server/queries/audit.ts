@@ -4,6 +4,7 @@ import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
+  adminActionLogs,
   credentialAccessLogs,
   orderItems,
   orders,
@@ -116,3 +117,47 @@ export async function listCredentialAccessLogs(
   };
 }
 
+export type AdminActionLogRow = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  createdAt: Date;
+  actorEmail: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  diff: Record<string, unknown> | null;
+};
+
+export async function listRecentAdminActionLogs(limit = 100): Promise<AdminActionLogRow[]> {
+  const safeLimit = Math.min(300, Math.max(1, Math.floor(limit)));
+
+  const rows = await db
+    .select({
+      id: adminActionLogs.id,
+      action: adminActionLogs.action,
+      entityType: adminActionLogs.entityType,
+      entityId: adminActionLogs.entityId,
+      createdAt: adminActionLogs.createdAt,
+      ipAddress: adminActionLogs.ipAddress,
+      userAgent: adminActionLogs.userAgent,
+      diff: adminActionLogs.diff,
+      actorEmail: users.email,
+    })
+    .from(adminActionLogs)
+    .innerJoin(users, eq(users.id, adminActionLogs.actorId))
+    .orderBy(desc(adminActionLogs.createdAt))
+    .limit(safeLimit);
+
+  return rows.map((row) => ({
+    id: row.id,
+    action: row.action,
+    entityType: row.entityType,
+    entityId: row.entityId,
+    createdAt: row.createdAt,
+    actorEmail: row.actorEmail,
+    ipAddress: row.ipAddress,
+    userAgent: row.userAgent,
+    diff: row.diff as Record<string, unknown> | null,
+  }));
+}

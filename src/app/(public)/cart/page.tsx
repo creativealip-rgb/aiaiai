@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import { useCartStore } from "@/stores/cart";
 import { formatIdr } from "@/lib/price";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -9,6 +10,41 @@ import { Card } from "@/components/ui/card";
 
 export default function CartPage() {
   const { items, removeItem, updateQty, clearCart, getTotal } = useCartStore();
+  const [stockCounts, setStockCounts] = useState<Record<string, number>>({});
+
+  const trackedVariantIds = useMemo(
+    () =>
+      [...new Set(items.filter((item) => item.stockMode === "tracked").map((item) => item.variantId))],
+    [items],
+  );
+
+  useEffect(() => {
+    if (trackedVariantIds.length === 0) {
+      return;
+    }
+
+    let mounted = true;
+    void (async () => {
+      try {
+        const res = await fetch("/api/cart/stock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ variantIds: trackedVariantIds }),
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { counts?: Record<string, number> };
+        if (!mounted) return;
+        setStockCounts(body.counts ?? {});
+      } catch {
+        if (!mounted) return;
+        setStockCounts({});
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [trackedVariantIds]);
 
   if (items.length === 0) {
     return (
@@ -37,7 +73,11 @@ export default function CartPage() {
               <p className="text-sm text-muted-foreground">{item.variantName}</p>
               <p className="text-sm">{formatIdr(item.price)}</p>
               {item.stockMode === "tracked" ? (
-                <p className="text-xs text-muted-foreground">Stok varian ini dilacak dan diverifikasi saat checkout.</p>
+                <p className="text-xs text-muted-foreground">
+                  {typeof stockCounts[item.variantId] === "number"
+                    ? `Sisa stok: ${stockCounts[item.variantId]}`
+                    : "Mengecek sisa stok..."}
+                </p>
               ) : null}
             </div>
             <div className="flex items-center gap-2">

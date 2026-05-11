@@ -50,6 +50,7 @@ export function StocksManager({
   variants: VariantOption[];
 }) {
   const [stocks, setStocks] = useState(initialStocks);
+  const [statusFilter, setStatusFilter] = useState<"all" | AccountStockStatus>("all");
   const [variantId, setVariantId] = useState<string>(variants[0]?.id ?? "");
   const [label, setLabel] = useState("");
   const [notes, setNotes] = useState("");
@@ -60,6 +61,10 @@ export function StocksManager({
   const selectedVariant = useMemo(
     () => variants.find((item) => item.id === variantId) ?? null,
     [variants, variantId],
+  );
+  const filteredStocks = useMemo(
+    () => (statusFilter === "all" ? stocks : stocks.filter((row) => row.status === statusFilter)),
+    [statusFilter, stocks],
   );
 
   function refreshPage() {
@@ -207,11 +212,30 @@ export function StocksManager({
         <CardHeader>
           <CardTitle>Daftar stok</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {stocks.length === 0 ? (
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor="stock-status-filter">Filter status</Label>
+            <select
+              id="stock-status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as "all" | AccountStockStatus)}
+              className="border-input bg-background h-8 rounded-lg border px-2 text-sm"
+            >
+              <option value="all">Semua</option>
+              <option value="available">available</option>
+              <option value="sold">sold</option>
+              <option value="reserved">reserved</option>
+              <option value="disabled">disabled</option>
+            </select>
+            <p className="text-muted-foreground text-xs">
+              Menampilkan {filteredStocks.length} dari {stocks.length} stok.
+            </p>
+          </div>
+
+          {filteredStocks.length === 0 ? (
             <p className="text-muted-foreground text-sm">Belum ada stok.</p>
           ) : (
-            stocks.map((row) => (
+            filteredStocks.map((row) => (
               <div
                 key={row.id}
                 className="flex flex-col gap-3 rounded-md border p-3 md:flex-row md:items-center md:justify-between"

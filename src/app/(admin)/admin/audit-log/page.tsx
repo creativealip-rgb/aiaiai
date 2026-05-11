@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { listCredentialAccessLogs } from "@/server/queries/audit";
+import { listCredentialAccessLogs, listRecentAdminActionLogs } from "@/server/queries/audit";
 
 export const metadata: Metadata = {
   title: "Admin · Audit Log",
@@ -37,13 +37,16 @@ export default async function AdminAuditLogPage({
   const from = sp.from ? parseYmdToDate(sp.from) : undefined;
   const to = sp.to ? parseYmdToDateEnd(sp.to) : undefined;
 
-  const { items, total, totalPages, pageSize } = await listCredentialAccessLogs({
-    search: sp.search,
-    from,
-    to,
-    page,
-    pageSize: 30,
-  });
+  const [{ items, total, totalPages, pageSize }, adminItems] = await Promise.all([
+    listCredentialAccessLogs({
+      search: sp.search,
+      from,
+      to,
+      page,
+      pageSize: 30,
+    }),
+    listRecentAdminActionLogs(80),
+  ]);
 
   const startIdx = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const endIdx = Math.min(page * pageSize, total);
@@ -72,6 +75,48 @@ export default async function AdminAuditLogPage({
             <Input name="to" type="date" defaultValue={sp.to ?? ""} />
             <Button type="submit">Terapkan</Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Audit aksi admin</CardTitle>
+          <CardDescription>Rekam jejak aksi sensitif (order/user).</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {adminItems.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Belum ada log aksi admin.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Waktu</TableHead>
+                  <TableHead>Admin</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Entity</TableHead>
+                  <TableHead>Diff</TableHead>
+                  <TableHead>IP</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {adminItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{new Date(item.createdAt).toLocaleString("id-ID")}</TableCell>
+                    <TableCell>{item.actorEmail}</TableCell>
+                    <TableCell>{item.action}</TableCell>
+                    <TableCell>
+                      {item.entityType}
+                      {item.entityId ? `:${item.entityId}` : ""}
+                    </TableCell>
+                    <TableCell className="max-w-[260px] whitespace-normal text-xs">
+                      {item.diff ? JSON.stringify(item.diff) : "-"}
+                    </TableCell>
+                    <TableCell>{item.ipAddress ?? "-"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -187,4 +232,3 @@ function parseYmdToDateEnd(value: string): Date | undefined {
   if (Number.isNaN(d.getTime())) return undefined;
   return d;
 }
-

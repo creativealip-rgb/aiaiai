@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { renderOrderDeliveryEmailHtml } from "@/emails/order-delivery-email";
 
 type DeliveryCredential = {
   productName: string;
@@ -37,14 +38,11 @@ export async function sendOrderDeliveryEmail({
     "Simpan data ini dengan aman.",
   ].join("\n");
 
-  const htmlItems = items
-    .map(
-      (item, idx) =>
-        `<li><strong>${idx + 1}. ${escapeHtml(item.productName)} — ${escapeHtml(item.variantName)}</strong><pre>${escapeHtml(item.credential)}</pre></li>`,
-    )
-    .join("");
-
-  const html = `<p>Pembayaran order <strong>${escapeHtml(orderNumber)}</strong> sudah kami terima.</p><p>Berikut kredensial Anda:</p><ol>${htmlItems}</ol><p>Simpan data ini dengan aman.</p>`;
+  const html = renderOrderDeliveryEmailHtml({
+    appName: env.NEXT_PUBLIC_APP_NAME,
+    orderNumber,
+    items,
+  });
 
   if (!env.RESEND_API_KEY) {
     console.info(`\n[order:delivery] to=${to}\n  order=${orderNumber}\n${text}\n`);
@@ -72,13 +70,3 @@ export async function sendOrderDeliveryEmail({
     throw new Error(`Resend send failed (${res.status}): ${body.slice(0, 300)}`);
   }
 }
-
-function escapeHtml(input: string): string {
-  return input
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
