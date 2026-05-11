@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { env } from "@/lib/env";
 import { requireAdmin } from "@/server/auth";
 
+import { AdminNav } from "./admin-nav";
 import { SignOutButton } from "../(member)/dashboard/sign-out-button";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +27,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <Link href="/admin" className="text-base font-bold tracking-tight">
               {env.NEXT_PUBLIC_APP_NAME} · Admin
             </Link>
+            <AdminNav />
           </div>
           <div className="flex items-center gap-3">
             <Link className="text-sm text-neutral-300 hover:text-white" href="/dashboard">

@@ -66,12 +66,15 @@ export default async function DashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Riwayat order</CardTitle>
-          <CardDescription>Akan tersedia di Fase 3 (Cart &amp; Checkout).</CardDescription>
+          <CardDescription>Lihat detail pesanan dan kredensial akun yang terkirim.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">
-            Belum ada order. Jelajahi produk saat katalog aktif.
-          </p>
+          <Link
+            href="/dashboard/orders"
+            className="bg-background hover:bg-muted inline-flex h-7 items-center rounded-[min(var(--radius-md),12px)] border px-2.5 text-[0.8rem] font-medium"
+          >
+            Buka riwayat order
+          </Link>
         </CardContent>
       </Card>
     </div>

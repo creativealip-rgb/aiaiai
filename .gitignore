@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# user-uploaded product / category images (served from public/uploads/)
+/public/uploads/*
+!/public/uploads/README.md

@@ -15,6 +15,34 @@
       "when": 1778431284908,
       "tag": "0001_easy_sentinels",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778457585794,
+      "tag": "0002_petite_stellaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778461136141,
+      "tag": "0003_flowery_mathemanic",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778469000000,
+      "tag": "0004_green_ciphers",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778470200000,
+      "tag": "0005_odd_hobgoblin",
+      "breakpoints": true
     }
   ]
 }

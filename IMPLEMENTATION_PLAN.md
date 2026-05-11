@@ -489,15 +489,31 @@ Setiap task ada **Acceptance Criteria (AC)** yang harus terpenuhi sebelum diangg
 
 **AC**: user bisa register → verify → login → akses dashboard → logout. Admin tidak bisa diakses member. Password di-hash pakai argon2id. OAuth Google berhasil login & merge ke shadow user bila email sama.
 
-### Fase 2 — Katalog Produk (3-4 hari)
+### Fase 2 — Katalog Produk ✅ (selesai)
 
-- [ ] Schema `categories`, `products`, `product_variants` + migration.
-- [ ] Admin: CRUD kategori.
-- [ ] Admin: CRUD produk (form + upload image via `/api/uploads` — local storage dulu).
-- [ ] Admin: CRUD varian per produk.
-- [ ] Public: `/products` dengan filter (kategori, price range, search), sort (terbaru, terlaris, harga), paginasi.
-- [ ] Public: `/products/[slug]` — galeri, varian selector, deskripsi (markdown), related products.
-- [ ] SEO: `generateMetadata` per produk.
+- [x] Schema `categories`, `products`, `product_variants` + migration (`drizzle/0002_petite_stellaris.sql`).
+- [x] Admin: CRUD kategori (`/admin/categories` — list + dialog create/edit/delete + soft-guard saat masih dipakai produk).
+- [x] Admin: CRUD produk (`/admin/products`, `/admin/products/new`, `/admin/products/[id]`) + upload gambar via `/api/uploads` (local storage `public/uploads/`, multi-image dengan thumbnail).
+- [x] Admin: CRUD varian per produk (manager dalam halaman edit produk, guard "minimal 1 varian aktif").
+- [x] Public: `/products` dengan filter (kategori, price range, search, tipe), sort (terbaru, terlaris, harga), paginasi (`pageSize = 12`).
+- [x] Public: `/products/[slug]` — galeri, varian selector, deskripsi (react-markdown + remark-gfm), related products.
+- [x] Public: `/c/[category]` + landing `/` (featured + kategori nav) + layout publik dengan header/footer.
+- [x] SEO: `generateMetadata` per produk + per kategori + JSON-LD `Product` schema (incl. offers, aggregateRating).
+- [x] `revalidate = 300` (ISR) di landing, katalog, detail, kategori; admin mutation → `revalidatePath`.
+- [x] Seed diperluas (3 kategori + 12 produk + 28 varian) — idempotent.
+- [x] `npm run typecheck`, `npm run lint`, `npm run build` semua hijau.
+
+**AC**: ✅ admin full CRUD berjalan (kategori, produk, varian, upload gambar) · katalog publik responsive dengan filter & pagination · `generateMetadata` + JSON-LD siap untuk SEO.
+
+### Fase 2 — Katalog Produk (deprecated checklist)
+
+- [x] Schema `categories`, `products`, `product_variants` + migration.
+- [x] Admin: CRUD kategori.
+- [x] Admin: CRUD produk (form + upload image via `/api/uploads` — local storage dulu).
+- [x] Admin: CRUD varian per produk.
+- [x] Public: `/products` dengan filter (kategori, price range, search), sort (terbaru, terlaris, harga), paginasi.
+- [x] Public: `/products/[slug]` — galeri, varian selector, deskripsi (markdown), related products.
+- [x] SEO: `generateMetadata` per produk.
 
 **AC**: admin bisa full CRUD, katalog publik responsive, lighthouse SEO > 90.
 
@@ -941,6 +957,13 @@ Semua pertanyaan awal sudah dikonfirmasi. Ringkasan:
   - `drizzle.config.ts` eksplisit load `.env.local` (bukan cuma `.env`).
   - `next.config.ts`: `output: "standalone"` + `turbopack.root` + security headers baseline.
   - `typecheck` + `lint` + `build` hijau; dev server verified HTTP 200 dengan badge DB "connected".
-- **v5** (sekarang) — Simplify local dev stack:
+- **v5** — Simplify local dev stack:
   - **Drop Adminer** dari `docker-compose.yml`. DB UI pakai **Drizzle Studio** (`npm run db:studio`) — schema-aware, TS-native, gak butuh container tambahan.
   - Container lokal sekarang cuma `ai3-postgres` saja.
+- **v6** (sekarang) — **Fase 2 selesai.**
+  - Migration `0002_petite_stellaris` tambah 3 enum (`product_type`, `delivery_type`, `stock_mode`) + 3 tabel (`categories`, `products`, `product_variants`).
+  - Zod schema katalog dipindah ke `src/lib/schemas/{categories,products}.ts` supaya Server Actions + client form bisa sama-sama import tanpa bocoran `server-only` ke bundle client.
+  - Upload gambar lokal via `POST /api/uploads` → `public/uploads/{folder}/{YYYY}/{MM}/{hex}.{ext}`.
+  - Next.js 16 `images.remotePatterns` dikosongkan; uploader pakai `unoptimized` (local path). Tambahkan pattern saat pindah ke Supabase/R2 di Fase 7.
+  - Dependencies baru: `react-markdown`, `remark-gfm` (deskripsi produk); shadcn `textarea`, `checkbox`, `switch`, `separator`.
+  - Seed idempotent: 3 kategori (Hiburan / AI / Produktifitas) + 12 produk + 28 varian.
