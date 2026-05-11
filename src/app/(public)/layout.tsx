@@ -85,7 +85,9 @@ export default async function PublicLayout({ children }: { children: ReactNode }
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1" tabIndex={-1}>
+        {children}
+      </main>
 
       {whatsappUrl ? (
         <Link

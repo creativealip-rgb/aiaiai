@@ -1,34 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI3 Marketplace
 
-## Getting Started
+Marketplace akun & jasa digital berbasis Next.js 16 + Drizzle + PostgreSQL + Better-Auth.
 
-First, run the development server:
+## Stack
+- Next.js 16 (App Router), React 19, TypeScript
+- PostgreSQL 16 + Drizzle ORM
+- Better-Auth (email/password + Google OAuth)
+- Mayar (payment gateway)
+- Tailwind v4 + shadcn/ui
 
+## Prasyarat
+- Node.js 20+
+- Docker + Docker Compose
+
+## Local Development
+1. Salin env:
+```bash
+cp .env.example .env.local
+```
+2. Jalankan PostgreSQL lokal:
+```bash
+docker compose up -d
+```
+3. Install dependency:
+```bash
+npm install
+```
+4. Migrasi DB:
+```bash
+npm run db:migrate
+```
+5. Seed data:
+```bash
+npm run db:seed
+```
+6. Jalankan app:
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quality Checks
+```bash
+npm run lint
+npx tsc --noEmit --incremental false
+npm run build
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## E2E Tests (Playwright)
+Smoke:
+```bash
+npm run test:e2e
+```
+Flow kritikal (opt-in):
+```bash
+E2E_FULL=1 npm run test:e2e
+```
 
-## Learn More
+## Production (Docker + Caddy)
+File utama:
+- `Dockerfile`
+- `docker-compose.prod.yml`
+- `ops/Caddyfile`
+- `ops/backup.sh`
 
-To learn more about Next.js, take a look at the following resources:
+Langkah ringkas:
+1. Siapkan `.env.production` dari `.env.example`.
+2. Pastikan `DOMAIN`, `DATABASE_URL`, `AUTH_SECRET`, `CREDENTIALS_ENCRYPTION_KEY`, dan kredensial Mayar sudah valid.
+3. Jalankan:
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+4. Migrasi:
+```bash
+docker compose -f docker-compose.prod.yml run --rm app npm run db:migrate
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Health Check
+- Endpoint: `/api/health`
+- Digunakan untuk container healthcheck dan monitoring uptime.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Observability
+- Structured logging: `src/lib/logger.ts` (Pino)
+- Sentry scaffold:
+  - `instrumentation.ts`
+  - `instrumentation-client.ts`
+  - `sentry.server.config.ts`
+  - `sentry.edge.config.ts`
 
-## Deploy on Vercel
+Aktif jika env Sentry diisi (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Ops Docs
+- [ops/RUNBOOK_VPS.md](ops/RUNBOOK_VPS.md)
+- [ops/REFUND_RUNBOOK.md](ops/REFUND_RUNBOOK.md)
+- [ops/KEY_ROTATION.md](ops/KEY_ROTATION.md)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

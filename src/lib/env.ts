@@ -44,6 +44,14 @@ const EnvSchema = z.object({
   SUPABASE_URL: z.string().optional().default(""),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(""),
 
+  // --- Observability / Deploy ---
+  LOG_LEVEL: z.string().optional().default(""),
+  SENTRY_DSN: z.string().optional().default(""),
+  SENTRY_ORG: z.string().optional().default(""),
+  SENTRY_PROJECT: z.string().optional().default(""),
+  SENTRY_AUTH_TOKEN: z.string().optional().default(""),
+  DOMAIN: z.string().optional().default(""),
+
   // --- Admin seed ---
   SEED_ADMIN_EMAIL: z.string().email().default("admin@ai3.local"),
   SEED_ADMIN_PASSWORD: z.string().min(8).default("Admin123!"),

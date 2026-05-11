@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { env } from "@/lib/env";
@@ -7,6 +8,12 @@ import { env } from "@/lib/env";
 // opting out of static prerender keeps the Next.js 16 build from trying to
 // render client form components (react-hook-form) without a browser context.
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 /**
  * Layout shared by login / register / forgot-password / reset-password.
@@ -14,7 +21,11 @@ export const dynamic = "force-dynamic";
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="bg-background flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="bg-background flex min-h-screen flex-col items-center justify-center px-4 py-10"
+    >
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <Link href="/" className="inline-block">

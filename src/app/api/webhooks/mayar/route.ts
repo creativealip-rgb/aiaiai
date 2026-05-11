@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { paymentWebhookEvents } from "@/db/schema";
+import { logger } from "@/lib/logger";
 import {
   verifyMayarWebhook,
   type MayarWebhookPayload,
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
   const token = req.headers.get("x-callback-token") ?? "";
 
   if (!verifyMayarWebhook(token)) {
+    logger.warn("mayar.webhook_unauthorized");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -80,7 +82,7 @@ export async function POST(req: Request) {
       .update(paymentWebhookEvents)
       .set({ error: errMsg })
       .where(eq(paymentWebhookEvents.eventId, eventId));
-    console.error("[mayar-webhook] processing error:", error);
+    logger.error({ err: error, eventId }, "mayar.webhook_processing_error");
   }
 
   return NextResponse.json({ received: true });

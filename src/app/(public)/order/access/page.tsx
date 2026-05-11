@@ -4,6 +4,10 @@ import { OrderAccessRequestForm } from "./request-form";
 
 export const metadata: Metadata = {
   title: "Minta Ulang Link Order",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function OrderAccessRequestPage() {
@@ -13,4 +17,3 @@ export default function OrderAccessRequestPage() {
     </div>
   );
 }
-

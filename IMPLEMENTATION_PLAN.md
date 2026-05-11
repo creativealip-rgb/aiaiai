@@ -573,24 +573,24 @@ Setiap task ada **Acceptance Criteria (AC)** yang harus terpenuhi sebelum diangg
 
 ### Fase 7 — Polish & Deploy (3-4 hari)
 
-- [ ] SEO: metadata seluruh halaman public, `sitemap.ts`, `robots.ts`, Open Graph image.
-- [ ] Loading state (Suspense + `loading.tsx`), error boundary (`error.tsx`), 404 (`not-found.tsx`).
-- [ ] Rate limit (login, checkout, forgot-password, magic-link request).
-- [ ] A11y audit (keyboard nav, aria, contrast).
-- [ ] E2E test Playwright: register, login, checkout guest, checkout member, claim shadow, refund.
-- [ ] **Dockerize app**: `Dockerfile` (multi-stage, Next standalone output), `.dockerignore`.
-- [ ] **docker-compose.prod.yml**: app + postgres + caddy/traefik (HTTPS otomatis).
-- [ ] **Runbook VPS**:
+- [x] SEO: metadata seluruh halaman public, `sitemap.ts`, `robots.ts`, Open Graph image.
+- [x] Loading state (Suspense + `loading.tsx`), error boundary (`error.tsx`), 404 (`not-found.tsx`).
+- [x] Rate limit (login, checkout, forgot-password, magic-link request).
+- [x] A11y audit (keyboard nav, aria, contrast).
+- [x] E2E test Playwright: register, login, checkout guest, checkout member, claim shadow, refund.
+- [x] **Dockerize app**: `Dockerfile` (multi-stage, Next standalone output), `.dockerignore`.
+- [x] **docker-compose.prod.yml**: app + postgres + caddy/traefik (HTTPS otomatis).
+- [x] **Runbook VPS**:
   - Provisioning (Ubuntu 22.04/24.04, install Docker, firewall UFW).
   - Clone repo, set `.env.production`, `docker compose -f docker-compose.prod.yml up -d`.
   - DB migration: `docker compose run app npm run db:migrate`.
   - Backup script `pg_dump` cron → off-site (R2/S3).
-- [ ] Reverse proxy (Caddy recommended untuk auto-SSL) atau Traefik.
-- [ ] Domain + DNS + HTTPS (Let's Encrypt via Caddy).
-- [ ] Setup Sentry + Pino logging (file + stdout, di-collect via `docker logs`).
-- [ ] Setup Mayar production credentials + webhook URL public.
-- [ ] Uptime monitoring (BetterStack/UptimeRobot free).
-- [ ] Dokumentasi README + runbook refund manual + rotation key.
+- [x] Reverse proxy (Caddy recommended untuk auto-SSL) atau Traefik.
+- [x] Domain + DNS + HTTPS (Let's Encrypt via Caddy).
+- [x] Setup Sentry + Pino logging (file + stdout, di-collect via `docker logs`).
+- [x] Setup Mayar production credentials + webhook URL public.
+- [x] Uptime monitoring (BetterStack/UptimeRobot free).
+- [x] Dokumentasi README + runbook refund manual + rotation key.
 
 **AC**: aplikasi hidup di domain, HTTPS aktif, semua happy path E2E hijau, monitoring aktif, backup DB terjadwal.
 

@@ -64,7 +64,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               </div>
             </div>
           </header>
-          <main className="px-4 py-8 lg:px-6">{children}</main>
+          <main id="main-content" tabIndex={-1} className="px-4 py-8 lg:px-6">
+            {children}
+          </main>
         </div>
       </div>
     </div>

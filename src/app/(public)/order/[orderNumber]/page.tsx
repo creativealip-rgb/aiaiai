@@ -13,6 +13,10 @@ import { eq } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: "Status order",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";

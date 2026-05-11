@@ -64,7 +64,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-8">
+        {children}
+      </main>
     </div>
   );
 }

@@ -6,6 +6,10 @@ import { CheckoutForm } from "./checkout-form";
 
 export const metadata: Metadata = {
   title: "Checkout",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const dynamic = "force-dynamic";

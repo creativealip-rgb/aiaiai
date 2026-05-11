@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Semua produk",
   description:
     "Katalog akun digital & jasa digital AI3. Filter berdasarkan kategori, harga, dan tipe.",
+  alternates: { canonical: "/products" },
 };
 
 type SearchParams = {

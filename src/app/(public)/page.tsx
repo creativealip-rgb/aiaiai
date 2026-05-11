@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -10,6 +11,12 @@ import { listActiveCategories } from "@/server/queries/categories";
 import { listFeaturedProducts } from "@/server/queries/products";
 
 export const revalidate = 300; // ISR: refresh landing every 5 min
+export const metadata: Metadata = {
+  title: "Marketplace Akun & Jasa Digital",
+  description:
+    "Beli akun streaming, AI, dan produktifitas dengan pengiriman otomatis, garansi aktif, dan pembayaran QRIS/VA/e-wallet.",
+  alternates: { canonical: "/" },
+};
 
 export default function HomePage() {
   return (
