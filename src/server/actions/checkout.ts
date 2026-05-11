@@ -4,6 +4,10 @@
  * Checkout Server Action — creates an order and returns the payment URL.
  */
 
+import { headers } from "next/headers";
+
+import { getClientIpFromHeaders } from "@/lib/request-ip";
+import { dbRateLimit } from "@/lib/rate-limit";
 import { checkoutSchema } from "@/lib/schemas/checkout";
 import { actionError, actionOk, type ActionResult } from "@/server/actions/action-result";
 import { getSession } from "@/server/auth";
@@ -28,6 +32,24 @@ export async function checkoutAction(
     if (!parsed.data.guestName) {
       parsed.data.guestName = session!.user.name || undefined;
     }
+  }
+
+  try {
+    const reqHeaders = await headers();
+    const ip = getClientIpFromHeaders(reqHeaders);
+    const identity = userId ? `u:${userId}` : `g:${(parsed.data.guestEmail ?? "").toLowerCase()}`;
+    const limit = await dbRateLimit(`checkout:${identity}:${ip}`, {
+      max: userId ? 12 : 6,
+      windowSeconds: 15 * 60,
+    });
+    if (!limit.success) {
+      return actionError("Terlalu banyak percobaan checkout. Coba lagi beberapa menit lagi.", {
+        code: "RATE_LIMIT",
+      });
+    }
+  } catch (error) {
+    // Fail-open to avoid blocking legitimate checkout if limiter backend is down.
+    console.error("[checkoutAction] rate-limit check failed", error);
   }
 
   try {

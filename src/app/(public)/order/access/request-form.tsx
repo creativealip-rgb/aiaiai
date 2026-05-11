@@ -39,10 +39,19 @@ export function OrderAccessRequestForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
-    const body = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      message?: string;
+      retryAt?: string;
+    };
     setSubmitting(false);
 
     if (!res.ok) {
+      if (res.status === 429 && body.retryAt) {
+        const retry = new Date(body.retryAt);
+        toast.error(`Terlalu sering meminta link. Coba lagi setelah ${retry.toLocaleString("id-ID")}.`);
+        return;
+      }
       toast.error(body.error ?? "Gagal mengirim permintaan.");
       return;
     }
@@ -96,4 +105,3 @@ export function OrderAccessRequestForm() {
     </Card>
   );
 }
-

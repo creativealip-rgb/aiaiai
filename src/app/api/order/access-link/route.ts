@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { memoryRateLimit } from "@/lib/rate-limit";
+import { getClientIpFromHeaders } from "@/lib/request-ip";
+import { dbRateLimit, memoryRateLimit, type RateLimitResult } from "@/lib/rate-limit";
 import { resendGuestOrderAccessLink } from "@/server/services/orders";
 
 const requestSchema = z.object({
@@ -25,12 +26,27 @@ export async function POST(req: Request) {
   }
 
   const emailKey = parsed.data.email.toLowerCase();
-  const limit = memoryRateLimit(`magic-link:${emailKey}`, { max: 3, windowSeconds: 60 * 60 });
-  if (!limit.success) {
+  const ipKey = getClientIpFromHeaders(req.headers);
+  let byEmailLimit: RateLimitResult;
+  let byIpLimit: RateLimitResult;
+
+  try {
+    [byEmailLimit, byIpLimit] = await Promise.all([
+      dbRateLimit(`magic-link:email:${emailKey}`, { max: 3, windowSeconds: 60 * 60 }),
+      dbRateLimit(`magic-link:ip:${ipKey}`, { max: 10, windowSeconds: 60 * 60 }),
+    ]);
+  } catch (error) {
+    console.error("[order-access-link] db rate-limit check failed", error);
+    byEmailLimit = memoryRateLimit(`magic-link:${emailKey}`, { max: 3, windowSeconds: 60 * 60 });
+    byIpLimit = memoryRateLimit(`magic-link-ip:${ipKey}`, { max: 10, windowSeconds: 60 * 60 });
+  }
+
+  if (!byEmailLimit.success || !byIpLimit.success) {
+    const retryAt = new Date(Math.max(byEmailLimit.resetAt, byIpLimit.resetAt)).toISOString();
     return NextResponse.json(
       {
         error: "Terlalu banyak permintaan. Coba lagi nanti.",
-        retryAt: new Date(limit.resetAt).toISOString(),
+        retryAt,
       },
       { status: 429 },
     );
@@ -43,4 +59,3 @@ export async function POST(req: Request) {
     message: "Jika data cocok, link akses baru sudah dikirim ke email.",
   });
 }
-
